@@ -216,3 +216,36 @@ bundle exec rspec
 
 ### Como enviar seu projeto
 Salve seu código em um versionador de código (GitHub, GitLab, Bitbucket) e nos envie o link publico. Se achar necessário, informe no README as instruções para execução ou qualquer outra informação relevante para correção/entendimento da sua solução.
+
+
+## Problemas encontrados
+### 1. **Erro de Permissão no Schema.rb**
+```
+Permission denied @ rb_sysopen - /rails/db/schema.rb
+```
+**Causa**: Conflito entre UID do usuário no host vs container
+- Usuário no host: `mikael` (UID 1002)  
+- Usuário no container: `rails` (UID 1000)
+- Quando volumes são montados, arquivos mantêm permissões do host
+
+**Solução**: Configurar docker-compose para usar mesmo UID do host
+```yaml
+services:
+  web:
+    user: "${UID:-1000}:${GID:-1000}"
+```
+
+### 2. **Puma Inacessível Externamente**
+```
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+```
+
+**Causa**: Puma fazendo bind apenas em `127.0.0.1` (localhost interno do container)
+- `port 3000` é equivalente a `bind "tcp://127.0.0.1:3000"`
+- Containers precisam escutar em todas as interfaces para aceitar conexões externas
+
+**Solução**: Configurar bind para `0.0.0.0` no `config/puma.rb`
+```ruby
+# Remover: port ENV.fetch("PORT") { 3000 }
+# Adicionar: bind "tcp://0.0.0.0:#{ENV.fetch("PORT") { 3000 }}"
+```

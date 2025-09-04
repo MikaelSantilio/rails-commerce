@@ -1,33 +1,42 @@
-version: '3'
-
 services:
     db:
         image: postgres:16-alpine
         environment:
-          - POSTGRES_USER=postgres
-          - POSTGRES_PASSWORD=password
+          - POSTGRES_USER=${POSTGRES_USER}
+          - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         ports:
-            - '5432:5432'
+            - '${POSTGRES_PORT}:${POSTGRES_PORT}'
         volumes:
-            - postgres13:/var/lib/postgresql/data
+            - postgres16:/var/lib/postgresql/data
     redis:
         image: redis:7.0.15-alpine
         ports:
-        - '6379:6379'
+            - '6379:6379'
         volumes:
-        - redis_data:/data  
+            - redis_data:/data  
     web:
-        ## TODO
+        build: .
+        image: rails-commerce:latest
+        container_name: rails-commerce
+        user: "${UID:-1000}:${GID:-1000}"
+        depends_on:
+            - db
+            - redis
+        volumes:
+            - .:/rails:cached
+        env_file:
+            - ./.env
+        ports:
+            - '3000:3000'
     test:
         build: .
+        user: "${UID:-1000}:${GID:-1000}"
         command: bundle exec rspec
         volumes:
             - .:/rails
         depends_on:
             - db
-            - redis 
-        environment:
-            - DATABASE_URL: postgresql://postgres:password@db:5432/myapp_test
-            - REDIS_URL: redis://redis:6379/0
+            - redis
 volumes:
-    postgres13:
+    postgres16:
+    redis_data:
