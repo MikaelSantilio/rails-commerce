@@ -4,6 +4,19 @@ class Cart < ApplicationRecord
   # TODO: lógica para marcar o carrinho como abandonado e remover se abandonado
   has_many :cart_items, dependent: :destroy
 
+  def mark_as_abandoned
+    self.abandoned = true
+    save!
+  end
+
+  def remove_if_abandoned
+    self.destroy if abandoned?
+  end
+
+  def abandoned?
+    abandoned
+  end
+
   def increase_product_quantity(product, quantity)
     transaction do
       cart_item = cart_items.find_by(product_id: product.id)
@@ -16,6 +29,7 @@ class Cart < ApplicationRecord
       cart_item.save!
 
       recalculate_total_price
+      update_last_interaction_at
     end
   end
 
@@ -30,6 +44,7 @@ class Cart < ApplicationRecord
       cart_items.create!(product: product, quantity: quantity)
 
       recalculate_total_price
+      update_last_interaction_at
     end
   end
 
@@ -42,13 +57,19 @@ class Cart < ApplicationRecord
       end
       
       cart_item.destroy!
+
       recalculate_total_price
+      update_last_interaction_at
     end
   end
 
   def recalculate_total_price
-    self.total_price = cart_items.includes(:product)
-                                .sum { |item| item.quantity * item.product.price }
+    self.total_price = cart_items.includes(:product).sum(&:total_price)
+    save!
+  end
+
+  def update_last_interaction_at
+    self.last_interaction_at = Time.current
     save!
   end
 end

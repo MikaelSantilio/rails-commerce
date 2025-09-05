@@ -10,34 +10,24 @@ class CartsController < ApplicationController
   # POST /cart
   def add_new_product
     payload = params.permit(:product_id, :quantity)
-    product = Product.find_by(id: payload[:product_id])
-    if product.nil?
-      render json: { error: "Produto não encontrado" }, status: :not_found
-      return
-    end
     quantity = payload[:quantity].to_i
     if quantity <= 0
       render json: { error: "Quantidade inválida" }, status: :unprocessable_entity
       return
     end
-    @cart.add_new_product(product, quantity)
+    @cart.add_new_product(@product, quantity)
     render json: cart_response(@cart)
   end
 
   # POST /cart/add_item
   def add_item
     payload = params.permit(:product_id, :quantity)
-    product = Product.find_by(id: payload[:product_id])
-    if product.nil?
-      render json: { error: "Produto não encontrado" }, status: :not_found
-      return
-    end
     quantity = payload[:quantity].to_i
     if quantity <= 0
       render json: { error: "Quantidade inválida" }, status: :unprocessable_entity
       return
     end
-    @cart.increase_product_quantity(product, quantity)
+    @cart.increase_product_quantity(@product, quantity)
     render json: cart_response(@cart)
   end
 
@@ -53,7 +43,7 @@ class CartsController < ApplicationController
     @product = Product.find_by(id: params[:product_id])
     
     unless @product
-      render json: { error: "Produto não encontrado" }, status: :not_found
+      render json: { error: "Produto não encontrado" }, status: :not_found and return
     end
   end
 

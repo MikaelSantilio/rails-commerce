@@ -41,6 +41,20 @@ services:
         depends_on:
             - db
             - redis
+
+    sidekiq:
+        build: .
+        command: bundle exec sidekiq
+        user: "${UID:-1000}:${GID:-1000}"
+        depends_on:
+            - db
+            - redis
+        volumes:
+            - .:/rails:cached
+        env_file:
+            - ./.env
+        ports:
+            - '3001:3000'
 volumes:
     postgres16:
     redis_data:
