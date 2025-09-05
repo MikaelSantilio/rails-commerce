@@ -4,37 +4,42 @@ class CartsController < ApplicationController
 
   # GET /cart
   def show
-    render json: cart_response(@cart)
+    render json: CartSerializer.call(@cart)
   end
 
   # POST /cart
   def add_new_product
-    payload = params.permit(:product_id, :quantity)
-    quantity = payload[:quantity].to_i
-    if quantity <= 0
-      render json: { error: "Quantidade inválida" }, status: :unprocessable_entity
-      return
+    quantity = params[:quantity].to_i
+    result = CartService.add_new_product(@cart, @product, quantity)
+    
+    if result.success?
+      render json: CartSerializer.call(result.cart)
+    else
+      render json: { error: result.error }, status: :unprocessable_entity
     end
-    @cart.add_new_product(@product, quantity)
-    render json: cart_response(@cart)
   end
 
   # POST /cart/add_item
   def add_item
-    payload = params.permit(:product_id, :quantity)
-    quantity = payload[:quantity].to_i
-    if quantity <= 0
-      render json: { error: "Quantidade inválida" }, status: :unprocessable_entity
-      return
+    quantity = params[:quantity].to_i
+    result = CartService.increase_product_quantity(@cart, @product, quantity)
+    
+    if result.success?
+      render json: CartSerializer.call(result.cart)
+    else
+      render json: { error: result.error }, status: :unprocessable_entity
     end
-    @cart.increase_product_quantity(@product, quantity)
-    render json: cart_response(@cart)
   end
 
   # DELETE /cart/:product_id
   def destroy_product
-    @cart.remove_product(@product)
-    render json: cart_response(@cart)
+    result = CartService.remove_product(@cart, @product)
+    
+    if result.success?
+      render json: CartSerializer.call(result.cart)
+    else
+      render json: { error: result.error }, status: :unprocessable_entity
+    end
   end
 
   private
@@ -59,21 +64,5 @@ class CartsController < ApplicationController
     cart = Cart.create!(total_price: 0)
     session[:cart_id] = cart.id
     cart
-  end
-
-  def cart_response(cart)
-    {
-      id: cart.id,
-      products: cart.cart_items.includes(:product).map do |item|
-        {
-          id: item.product.id,
-          name: item.product.name,
-          quantity: item.quantity,
-          unit_price: item.product.price,
-          total_price: item.quantity * item.product.price
-        }
-      end,
-      total_price: cart.cart_items.includes(:product).sum { |item| item.quantity * item.product.price }
-    }
   end
 end

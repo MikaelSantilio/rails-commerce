@@ -9,7 +9,8 @@ RSpec.describe "/carts", type: :request do
         # 1) Inicializa a sessão e captura o cart da sessão
         get "/cart", as: :json
         expect(response).to have_http_status(:ok)
-        id = JSON.parse(response.body).fetch("id")
+        parsed_response = JSON.parse(response.body)
+        id = parsed_response.fetch("id")
         @session_cart = Cart.find(id)
 
         # 2) Cria o item no cart da sessão
@@ -33,7 +34,7 @@ RSpec.describe "/carts", type: :request do
         expect(response.content_type).to match(a_string_including("application/json"))
 
         json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Quantidade inválida")
+        expect(json_response["error"]).to eq('Quantidade deve ser maior que zero')
       end
 
       it "returns an error when product does not in the cart" do
@@ -47,8 +48,7 @@ RSpec.describe "/carts", type: :request do
         expect(response.content_type).to match(a_string_including("application/json"))
 
         json_response = JSON.parse(response.body)
-        expect(json_response["error"]).to eq("Dados inválidos")
-        expect(json_response["errors"].first).to eq("Produto não está no carrinho")
+        expect(json_response["error"]).to eq("Produto não está no carrinho")
       end
     end
   end
@@ -64,8 +64,9 @@ RSpec.describe "/carts", type: :request do
       post "/cart", params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to match(a_string_including("application/json"))
-
       json_response = JSON.parse(response.body)
+      expect(json_response.keys).to include("id", "products")
+      expect(json_response["products"].first.keys).to include("id", "name", "quantity", "total_price", "unit_price")
       expect(json_response["total_price"]).to eq("20.0")
     end
 
@@ -92,7 +93,7 @@ RSpec.describe "/carts", type: :request do
       expect(response.content_type).to match(a_string_including("application/json"))
 
       json_response = JSON.parse(response.body)
-      expect(json_response["error"]).to eq("Quantidade inválida")
+      expect(json_response["error"]).to eq('Quantidade deve ser maior que zero')
     end
 
     it "returns and error when product is already in the cart" do
@@ -114,8 +115,7 @@ RSpec.describe "/carts", type: :request do
       expect(response.content_type).to match(a_string_including("application/json"))
 
       json_response = JSON.parse(response.body)
-      expect(json_response["error"]).to eq("Dados inválidos")
-      expect(json_response["errors"].first).to eq("Produto já está no carrinho")
+      expect(json_response["error"]).to eq("Produto já está no carrinho")
     end
   end
 
@@ -129,19 +129,19 @@ RSpec.describe "/carts", type: :request do
       id = JSON.parse(response.body).fetch("id")
       @session_cart = Cart.find(id)
 
-      # 2) Cria o item no cart da sessão
-      @cart_item = FactoryBot.create(:cart_item, cart: @session_cart, product: product, quantity: 1)
+      @cart_items = FactoryBot.create_list(:cart_item, 10, cart: @session_cart, quantity: rand(1..10))
     end
 
     it "removes the product from the cart" do
       expect {
-        delete "/cart/#{product.id}", as: :json
+        delete "/cart/#{@cart_items.sample.product.id}", as: :json
       }.to change { CartItem.count }.by(-1)
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to match(a_string_including("application/json"))
-
       json_response = JSON.parse(response.body)
-      expect(json_response["total_price"]).to eq(0)
+      expect(json_response.keys).to include("id", "products")
+      expect(json_response["products"].first.keys).to include("id", "name", "quantity", "total_price", "unit_price")
+      expect(json_response["total_price"]).to eq(json_response["products"].sum { |p| p["total_price"].to_f }.to_s)
     end
 
     it "returns an error when product is not in the cart" do
@@ -151,8 +151,7 @@ RSpec.describe "/carts", type: :request do
       expect(response.content_type).to match(a_string_including("application/json"))
 
       json_response = JSON.parse(response.body)
-      expect(json_response["error"]).to eq("Dados inválidos")
-      expect(json_response["errors"].first).to eq("Produto não está no carrinho")
+      expect(json_response["error"]).to eq("Produto não está no carrinho")
     end
   end
 end
