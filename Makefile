@@ -34,13 +34,16 @@ shell-web: ## Abre um shell no container web
 	@export UID=$(UID) GID=$(GID) && docker compose exec web bash
 
 rails-console: ## Abre o console Rails
-	@export UID=$(UID) GID=$(GID) && docker compose exec web rails console
+	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails console
 
 db-setup: ## Configura o banco de dados
-	@export UID=$(UID) GID=$(GID) && docker compose exec web rails db:setup
+	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails db:setup
 
 db-migrate: ## Executa as migrações
-	@export UID=$(UID) GID=$(GID) && docker compose exec web rails db:migrate
+	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails db:migrate
 
 db-seed: ## Executa os seeds
-	@export UID=$(UID) GID=$(GID) && docker compose exec web rails db:seed
+	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails db:seed
+
+db-migrate-status: ## Mostra o status das migrações
+	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails db:migrate:status
