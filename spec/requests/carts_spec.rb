@@ -35,6 +35,21 @@ RSpec.describe "/carts", type: :request do
         json_response = JSON.parse(response.body)
         expect(json_response["error"]).to eq("Quantidade inválida")
       end
+
+      it "returns an error when product does not in the cart" do
+        other_product = FactoryBot.create(:product, name: "Other Product", price: 15.0)
+        params = {
+          product_id: other_product.id,
+          quantity: 1
+        }
+        post "/cart/add_item", params: params, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.content_type).to match(a_string_including("application/json"))
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["error"]).to eq("Dados inválidos")
+        expect(json_response["errors"].first).to eq("Produto não está no carrinho")
+      end
     end
   end
 
@@ -79,8 +94,30 @@ RSpec.describe "/carts", type: :request do
       json_response = JSON.parse(response.body)
       expect(json_response["error"]).to eq("Quantidade inválida")
     end
-  end
 
+    it "returns and error when product is already in the cart" do
+      # 1) Inicializa a sessão e captura o cart da sessão
+      get "/cart", as: :json
+      expect(response).to have_http_status(:ok)
+      id = JSON.parse(response.body).fetch("id")
+      @session_cart = Cart.find(id)
+
+      # 2) Cria o item no cart da sessão
+      @cart_item = FactoryBot.create(:cart_item, cart: @session_cart, product: product, quantity: 1)
+
+      params = {
+        product_id: product.id,
+        quantity: 1
+      }
+      post "/cart", params: params, as: :json
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.content_type).to match(a_string_including("application/json"))
+
+      json_response = JSON.parse(response.body)
+      expect(json_response["error"]).to eq("Dados inválidos")
+      expect(json_response["errors"].first).to eq("Produto já está no carrinho")
+    end
+  end
 
   describe "DELETE /cart/:product_id" do
     let(:product) { FactoryBot.create(:product, name: "Test Product", price: 10.0) }
