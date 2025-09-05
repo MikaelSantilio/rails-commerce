@@ -47,3 +47,6 @@ db-seed: ## Executa os seeds
 
 db-migrate-status: ## Mostra o status das migrações
 	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails db:migrate:status
+
+generate-controller: ## Gera um novo controller. Uso: make generate-controller name=NomeDoController actions="create update destroy"
+	@export UID=$(UID) GID=$(GID) && docker compose exec web bundle exec rails generate controller $(name) $(actions)
