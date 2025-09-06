@@ -1,4 +1,84 @@
 # Desafio técnico e-commerce
+## Descrição
+
+Uma API completa para gerenciamento de carrinho de compras de e-commerce, incluindo funcionalidades de adicionar/remover produtos, gerenciamento de quantidades e sistema de carrinho abandonado com cleanup automático.
+
+## Funcionalidades Implementadas
+
+### **Gerenciamento de Carrinho**
+- **Visualizar carrinho**: `GET /cart` - Retorna o carrinho atual da sessão
+- **Adicionar produto novo**: `POST /cart` - Adiciona um produto que não está no carrinho
+- **Incrementar quantidade**: `POST /cart/add_item` - Aumenta a quantidade de um produto existente
+- **Remover produto**: `DELETE /cart/:product_id` - Remove completamente um produto do carrinho
+
+### **Sistema de Carrinho Abandonado**
+- **Marcação automática**: Carrinhos inativos por 3+ horas são marcados como abandonados
+- **Limpeza automática**: Carrinhos abandonados há 7+ dias são removidos automaticamente
+- **Jobs Sidekiq**: Processamento em background com agendamento via `sidekiq-scheduler`
+
+### **Processamento Assíncrono**
+- **MarkCartAsAbandonedJob**: Executa a cada minuto para marcar carrinhos abandonados
+- **RemoveAbandonedCartJob**: Executa a cada hora para remover carrinhos antigos
+- **Interface Sidekiq**: Disponível em `/sidekiq` para monitoramento
+
+### Code Coverage
+- 99% de cobertura do codigo
+
+### **Makefile**
+- O Makefile abstrai os comandos de execução da aplicação com Docker. É necessário instalar ele em sua máquina se nao tiver, com:
+```bash
+sudo apt update
+sudo apt install make
+
+```
+- Comandos do Makefile
+
+```bash
+make start          # Inicia todos os serviços em background
+make test           # Executa suite de testes com coverage
+make logs-web       # Visualiza logs do servidor web
+make rails-console  # Acesso ao console Rails
+make db-migrate     # Executa migrações pendentes
+make help           # Mostra todos os outros comandos
+```
+
+### **Setup Inicial**
+```bash
+# Clonar e navegar para o projeto
+git clone <repo-url>
+cd rails-commerce
+
+# Iniciar ambiente completo
+make start
+
+# Configurar banco de dados (se necessário)
+make db-migrate
+make db-seed
+```
+
+### **Exemplo de Uso da API**
+```bash
+# Listar produtos disponíveis
+curl http://localhost:3000/products
+
+# Visualizar carrinho (vazio inicialmente)
+curl http://localhost:3000/cart
+
+# Adicionar produto ao carrinho
+curl -X POST http://localhost:3000/cart \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": 1, "quantity": 2}'
+
+# Incrementar quantidade
+curl -X POST http://localhost:3000/cart/add_item \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": 1, "quantity": 1}'
+
+# Remover produto
+curl -X DELETE http://localhost:3000/cart/1
+```
+
+
 
 ## Nossas expectativas
 
