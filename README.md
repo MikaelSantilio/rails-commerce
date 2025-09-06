@@ -43,10 +43,22 @@ make help           # Mostra todos os outros comandos
 ```
 
 ### **Setup Inicial**
+#### .env.example
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+REDIS_URL=redis://redis:6379/0
+RAILS_ENV=development
+```
+#### Instruções iniciais
 ```bash
 # Clonar e navegar para o projeto
 git clone <repo-url>
 cd rails-commerce
+# Adicione as variaveis de ambiente
+nano .env
 
 # Iniciar ambiente completo
 make start
